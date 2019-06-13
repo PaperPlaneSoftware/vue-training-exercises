@@ -1,0 +1,150 @@
+<!-- 
+    Implement the pairs memory game
+    
+    The game consists of a 4x4 grid of cards face down on the table. 
+    Each card has one of 8 unique symbols drawn on the front face. 
+    Given that there are 16 cards in total, there are exactly 2 copies
+    of each symbol. 
+    
+    The cards are shuffled so the placement of each symbol is not known
+    to the user.
+
+    The user can turn any 2 cards over at a time. If the symbols on the 
+    2 cards match then the cards remain turned over, otherwise they are 
+    turned back over.
+
+    The user continues to turn cards until all of them are turned over.
+
+    [hint] use font-awsesome for the symbols (need to know about :class)
+    [hint] use lodash
+    [optional] Generalise the game to NxN.
+    [optional] Give the user a limited number of tries.
+
+-->
+
+<html>
+    <head>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+        <style>
+            .cards-container {
+                width: 250px;
+                height: 250px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            .card {
+                width: 50px;
+                height: 50px;
+                margin: 5px;
+                box-sizing: border-box;
+                border: 1px solid black;
+                font-size: 20pt;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="app">
+            <h1>Pairs</h1>
+
+            <div class="cards-container">
+                <!-- 
+                    loop through all of the cards, use css to arrange them in a 
+                    grid. 
+                -->
+                <div v-for="(card, i) in cards" class="card" @click="() => cardClicked(card)">
+                    <!-- if a card is turned then show it's symbol -->
+                    <i v-if="card.turned" class="fas" :class="card.symbol"></i>
+                    <i v-else class="fas fa-align-justify"></i>
+                </div>
+            </div>
+
+            <!-- in the event that the game is completed show a replay button -->
+            <section v-if="completed">
+                <button @click="restart">Replay!</button>
+            </section>
+        </div>
+
+        <script>
+            // list all possible symbols
+            // cards are represented as an object with 3 properties.
+            let cards = [
+                { symbol: 'fa-cat',         turned: false,  matched: false },
+                { symbol: 'fa-crow',        turned: false,  matched: false }, 
+                { symbol: 'fa-dog',         turned: false,  matched: false },
+                { symbol: 'fa-dove',        turned: false,  matched: false },
+                { symbol: 'fa-hippo',       turned: false,  matched: false },
+                { symbol: 'fa-horse',       turned: false,  matched: false },
+                { symbol: 'fa-kiwi-bird',   turned: false,  matched: false },
+                { symbol: 'fa-otter',       turned: false,  matched: false },
+            ];
+
+            let vm = new Vue({
+                el: '#app',
+                data: {
+                    // initialise the cards by shuffling them.
+                    // cards.map(_.clone) s required to create unique copies of 
+                    // the cards
+                    cards: _.shuffle([...cards, ...cards.map(_.clone)]),
+                    selectedCard: null
+                },
+                computed: {
+                    // returns true if the game has been completed
+                    completed: function() {
+                        return _.every(this.cards, { matched: true })
+                    }
+                },
+                methods: {
+                    // A function to re-initialise the board.
+                    restart: function() {
+                        this.cards = _.shuffle(_.map(this.cards, card => ({ ...card, matched: false, turned: false })))
+                    },
+
+                    // This is called when a card is clicked
+                    cardClicked: function(card) {
+                        // If the card is already matched then do nothing
+                        if (!card.matched) {
+                            // turn the card over.
+                            card.turned = true;
+
+                            if (this.selectedCard) {
+                                // if a previous card has been selected then
+                                // check if the symbols match
+                                if (this.selectedCard.symbol === card.symbol) {
+                                    // if they do then set both cards matched
+                                    // status to true and reset the 
+                                    // selectedCard.
+                                    this.selectedCard.matched = true;
+                                    card.matched = true;
+                                    this.selectedCard = null;
+                                } else {
+                                    // if they don't then turn both cards over
+                                    // after a short delay
+                                    setTimeout(() => {
+                                        this.selectedCard.turned = false
+                                        card.turned = false;
+                                        this.selectedCard = null
+                                    }, 1000)
+                                }
+                            } else {
+                                // if a previous card hasn't been selected then
+                                // make this card the selectedCard.
+                                this.selectedCard = card;
+                                this.selectedCard.turned = true;
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
