@@ -1,0 +1,223 @@
+<!--
+    Implement Minesweeper
+    
+    The game consists of a 10 x 10 grid of cells. Each cell may or 
+    may not have a bomb underneath it. The total number of bombs in
+    the grid are known before play begins and each cell is blank so 
+    whether a cell has a bomb or not is unknown to the player.
+
+    The player can perform two actions. Firstly, they may turn a cell
+    over to reveal what's underneath it. If it's a bomb then the game
+    is over and the player lost. If there is no bomb however the cell
+    gives the number of bombs in adjacent cells.
+
+    e.g.
+
+    - - x           x x -
+    - 1 -     or    - 3 -
+    - - -           - x -
+
+    Secondly, the play can right-click on a cell to place a flag. Flags
+    indicate to the player that there is possibly a bomb under that cell.
+    The player can only lay as many flags as there are bombs.
+
+    The game is completed when all cells have been revealed except those
+    cells which have been "flagged". 
+
+    The user continues to reveal cells until all of them are turned over.
+
+    [hint] use unicode emojis
+    [hint] use lodash
+    [optional] reveal all neighbouring cells if a cell is revealed and has
+    zero adjacent bombs.
+-->
+<html>
+    <head>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+        <style>
+            .grid-container {
+                width: 240px;
+                height: 240px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            .cell {
+                width: 20px;
+                height: 20px;
+                margin: 2px;
+                box-sizing: border-box;
+                border: 1px solid black;
+                font-size: 10pt;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+
+                user-select: none;
+                -moz-user-select: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="app">
+            <!-- couldn't find a bomb/mine emoji, so used the poop emoji instead! -->
+            <h1>Poop Sweeper</h1>
+
+            <h3>Bombs remaining: {{bombsRemaining}}</h3>
+            <div class="grid-container">
+                <div v-for="(cell, i) in cells">
+                    <div class="cell" @click.left="reveal(i)" @click.prevent.right="toggleFlag(i)" :style="{backgroundColor: cell.isRevealed ? 'silver' : 'white'}">
+                        <div class="no-interact" v-if="cell.isRevealed">
+                            <span v-if="cell.isBomb">💩</span>
+                            <span v-else-if="cell.adjBombs > 0">{{cell.adjBombs}}</span>
+                            <span v-else></span>
+                        </div>
+                        <div class="no-interact" v-if="cell.isFlagged">
+                            <span>🚧</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="failed">
+                <h2>Errr! Bad Luck</h2>
+                <button @click="replay">Replay</button>
+            </div>
+
+            <div v-if="win">
+                <h2>Yay! You cleared all the poop</h2>
+                <button @click="replay">Replay</button>
+            </div>
+        </div>
+
+        <script>
+            let vm = new Vue({
+                el: '#app',
+
+                created: function() {
+                    this.initialize();
+                },
+
+                data: {
+                    width: 10,
+                    height: 10,
+                    bombCount: 10,
+                    cells: [],
+                    failed: false
+                },
+                
+                computed: {
+                    columns: function() {
+                        return _.range(this.width)
+                    },
+
+                    rows: function() {
+                        return _.range(this.height)
+                    },
+
+                    bombsRemaining: function() {
+                        return this.bombCount - this.cells.map(cell => cell.isFlagged ? 1 : 0).reduce((a,b) => a+b);
+                    },
+
+                    win: function() {
+                        return _.every(this.cells, cell => cell.isRevealed || cell.isFlagged) && this.bombsRemaining === 0
+                    }
+                },
+                
+                methods: {
+                    // Returns the row and column in a 2D grid given a 1D index. 
+                    // e.g:
+                    // - - - -
+                    // - x - -    x has index 5 (which is (1, 1) in 2D)
+                    // - - - -
+                    // - - - - 
+                    toRowCol: function(i) {
+                        return {row: Math.floor(i/this.width), col: i%this.width};
+                    },
+
+                    // Converts a grid coordinate to a 1D index. Basically does
+                    // the opposite of `toRowCol`
+                    toIndex: function(r, c) {
+                        return r*this.width + c;
+                    },
+
+                    // Given a grid coordinate return the indices of it's 
+                    // neighbours. Note that the grid does not wrap.
+                    neighbours: function({row, col}) {
+                        let minRow = row - 1 < 0 ? 0 : row - 1;
+                        let maxRow = row + 1 > this.height - 1 ? this.height - 1 : row + 1;
+                        let minCol = col - 1 < 0 ? 0 : col - 1;
+                        let maxCol = col + 1 > this.width - 1 ? this.width - 1 : col + 1;
+
+                        let res = [];
+                        for(let r=minRow; r<=maxRow; r++) {
+                            for(let c=minCol; c<=maxCol; c++) {
+                                res.push(this.toIndex(r, c));
+                            }
+                        }
+                        return res;
+                    },
+
+                    // Initialise the playing board.
+                    initialize: function() {
+                        // initialize grid
+                        this.cells = new Array(this.width*this.height).fill(null).map(e => {
+                            return { isBomb: false, adjBombs: 0, isRevealed: false, isFlagged: false };
+                        });
+
+                        // initialize bombs
+                        _.sampleSize(_.range(this.width*this.height), this.bombCount).map(i => {
+                            this.cells[i].isBomb = true;
+                        });
+
+                        // initialize adjacent bombs
+                        for(let row=0; row<this.height; row++) {
+                            for(let col=0; col<this.width; col++) {
+                                let i = row*this.width + col;
+                                if(!this.cells[i].isBomb) {
+                                    this.cells[i].adjBombs = 
+                                        this.neighbours({row, col})
+                                            .map(ni => this.cells[ni].isBomb ? 1 : 0)
+                                            .reduce((a,b) => a+b);
+                                }
+                            }
+                        }
+                    },
+
+                    // Reveals the cell at the given index.
+                    reveal: function(i) {
+                        if(this.failed || this.cells[i].isRevealed || this.cells[i].isFlagged)
+                            return;
+
+                        this.cells[i].isRevealed = true;
+
+                        if(this.cells[i].isBomb) {
+                            this.failed = true;
+                            return;
+                        }
+                        
+                        if(this.cells[i].adjBombs === 0) {
+                            this.neighbours(this.toRowCol(i)).forEach(n => this.reveal(n));
+                        }
+                    },
+
+                    // Places a flag at the given index.
+                    toggleFlag: function(i) {
+                        this.cells[i].isFlagged = !this.cells[i].isFlagged;
+                    },
+
+                    replay: function() {
+                        this.initialize();
+                        this.failed = false;
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
