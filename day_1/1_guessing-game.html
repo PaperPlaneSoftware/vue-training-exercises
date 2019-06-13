@@ -1,0 +1,77 @@
+<!-- 
+    Implement a simple guessing game.
+    
+    The app must generate a secret number between 1 and 100.
+    The user must have a way of making a guess.
+    Display the users guess with appropriate message.
+    The guess is compared to the secret number.
+        If it's correct display a success message
+        If it's incorrect display a warning message
+    
+    [optional] show an error message if the guess is out of range or NaN
+    [optional] show warmer/colder message depending on the guess
+-->
+
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    </head>
+
+    <body>
+        <div id="app">
+            <h1>Warmer Colder</h1>
+            <p>Make a guess using the input box below.</p>
+
+            <!-- 
+                We bind the text entered to this input element to a data 
+                variable called `input`.
+                
+                Whenever the input text changes our variable is also updated. 
+            -->
+            <input type="text" v-model="input" />
+
+            <!-- 
+                `@` is shorthand for `v-on:`. Whenever this button is clicked
+                the `makeGuess` method is called.
+             -->
+            <button @click="makeGuess">Guess</button>
+
+            <!--
+                {{ guess }} and {{ message }} display the `guess` and `message`
+                variables.
+            -->
+            <h2>You guessed: {{ guess }} {{ message }}</h2>
+        </div>
+
+        <script>
+            // `vm` is the root component for our app.
+            let vm = new Vue({
+                el: '#app',
+
+                // this is where you define all state for the root component
+                data: {
+                    secret: Math.floor(Math.random() * 100),
+                    input: "",
+                    guess: null,
+                    message: ""
+                },
+
+                // this is where you define all operations associated with our
+                // component.
+                methods: {
+                    makeGuess: function() {
+                        this.guess = Number.parseInt(this.input);
+                        
+                        if(this.guess > this.secret) {
+                            this.message = "Too warm"
+                        } else if(this.guess < this.secret) {
+                            this.message = "Too cold"
+                        } else {
+                            this.message = "That's correct!"
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
