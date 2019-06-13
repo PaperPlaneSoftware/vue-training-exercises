@@ -1,0 +1,96 @@
+<!--
+    Implement a simple guessing game.
+    
+    The app must select a playing card from a shuffled deck.
+    This card is displayed to the user.
+    The user is given two buttons (higher and lower).
+    Selecting either button draws the next card from the deck.
+    The new card is compared to the previous card.
+        If the user's guess was correct ask them to make another guess
+        If the user's guess was incorrect display a message.
+    
+    [note] Aces are low
+    [hint] Use lodash
+    [optional] keep track of the users score and display it at the end
+-->
+
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    </head>
+
+    <body>
+        <div id="app">
+            <h1>Higher Lower</h1>
+
+            <!-- double mustache blocks can contain js expressions -->
+            <h2>{{ current ? current.suit + current.value : '' }} {{ next ? next.suit + next.value : '' }}</h2>
+            <h3>{{ message }}</h3>
+
+            <button @click="higher">Higher</button>
+            <button @click="lower">Lower</button>
+        </div>
+
+        <script>
+            // We're using lodash here to create a shuffled deck of cards.
+            let suits = ['S', 'C', 'D', 'H'];
+            let cards = _.range(1, 13);
+            let deck = _.flatMap(suits, s => _.map(cards, c => ({ suit: s, value: c }) ));
+            let shuffledDeck = _.shuffle(deck);
+
+            let vm = new Vue({
+                el: '#app',
+                data: {
+                    // the deck is initialised to all but the first card from 
+                    // the shuffled deck
+                    deck: _.tail(shuffledDeck),
+                    current: null,
+
+                    // we select the first card from the deck
+                    next: _.head(shuffledDeck),
+                    guess: '',
+                    message: ''
+                },
+                methods: {
+                    // A function for drawing the next card from the deck
+                    draw: function() {
+                        this.current = this.next;
+                        this.next = _.head(this.deck);
+                        this.deck = _.tail(this.deck);
+                    },
+
+                    // This is called when the user selects the `higher` button
+                    higher: function() {
+                        this.guess = 'h';
+                        this.draw();
+                        this.compare();
+                    },
+
+                    // This is called when the user selects the 'lower' button
+                    lower: function() {
+                        this.guess = 'l';
+                        this.draw();
+                        this.compare();
+                    },
+
+                    // A function to compare the current 2 cards to each other
+                    // and checks whether the users guess was correct of not.
+                    compare: function() {
+                        if(this.current) {
+                            let current = this.current.value;
+                            let next = this.next.value;
+                            let guess = this.guess;
+
+                            if(current > next && guess === 'l' || current <= next && guess === 'h') {
+                                this.message = 'Sweet';
+                            } else {
+                                this.message ="Oops";
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
